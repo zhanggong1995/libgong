@@ -137,6 +137,74 @@ int send_SSDP_SERCH_message(char *recv_buff,char *ST)//ST:all rootdevice mediaRe
 
 	int fd=udp_socket_send(1900,"239.255.255.250",serch_message,recv_buff);
 }
+int get_port_from_HTTP_location(char *location)//从http地址中获取端口信息，返回值为端口
+{
+	char *ptr=location;
+	char p[6];
+	int i=10;
+	int k=0;
+	while(ptr[i]!=':')
+	{i++;}
+	i++;
+	while(ptr[i]!='/')
+	{	
+		p[k]=ptr[i];
+		i++;
+		k++;
+	}
+	p[k]='\0';
+	int port=atoi(p);//char to int;
+	printf("HTTP server port: %d\n",port);
+	return port;
+}
+int get_addr_from_HTTP_location(char *des,char *src)
+{
+	char *p=strstr(src,"http://");
+	p+=strlen("http://");
+	int i=0;
+	while(*p!=':'&&*p!='\0')
+	{
+		des[i]=*p;
+		i++;
+		p++;
+	}
+	return 0;
+	
+}
+
+int HTTP_GET(char *location)
+{
+	int ret;
+	char recv_buff[10240];
+	char buff[1024];
+	char str1[1024] = "";
+	int port=get_port_from_HTTP_location(location);
+	char IPaddr[20];
+  	get_addr_from_HTTP_location(IPaddr,location);
+	sprintf(str1,"%s","GET");
+	sprintf(str1,"%s%s",str1,location);//http服务器地址
+	sprintf(str1,"%s%s\r\n",str1," HTTP/1.1");
+    //sprintf(str1, "%s\r\n","GET http://192.168.0.118:8080/description.xml HTTP/1.1"); //服务端接收数据处理文件地址,并带参数  
+	sprintf(str1, "%s%s\r\n",str1,"Accept: image/jpeg, application/x-ms-application, image/gif, application/xaml+xml, image/pjpeg, application/x-ms-xbap, application/x-shockwave-flash, application/msword, application/vnd.ms-powerpoint, application/vnd.ms-excel, */*");  
+    sprintf(str1, "%s%s\r\n",str1,"Accept-Language: en-US,zh-CN;q=0.5");  
+    sprintf(str1, "%s%s\r\n",str1,"User-Agent: Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 6.1; Trident/4.0; qdesk 2.4.1265.203; SLCC2; .NET CLR 2.0.50727; .NET CLR 3.5.30729; .NET CLR 3.0.30729; InfoPath.3)");  
+    sprintf(str1, "%s%s\r\n",str1,"Accept-Encoding: gzip, deflate");  
+    sprintf(str1, "%s%s\r\n",str1,"Host: 0.0.0.0"); //服务器地址(不填好像也可以请求到数据)  
+    sprintf(str1, "%s%s\r\n\r\n",str1,"Connection: Keep-Alive");
+	
+	int fd=tcp_connect(port,IPaddr,"block");
+	if(fd>=0)
+	{
+		send(fd,str1,strlen(str1),0);
+		while(1)
+		{
+			ret=recv(fd,buff,1024,0);
+			if(ret<0)
+				break;
+			sprintf(recv_buff,"%s%s",recv_buff,buff);
+		}
+	}
+}
 int main()
 {	
 	/* test 1
@@ -157,7 +225,10 @@ int main()
 	printf("%s\n",buff);
 	*/
 	/* test 3
-	*/
+	
 	char buff[512]={0};
 	send_SSDP_SERCH_message(buff,"rootdevice");
+	*/
+	
+	HTTP_GET("http://192.168.1.1:1900/igd.xml");
 }
