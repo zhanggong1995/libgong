@@ -177,7 +177,7 @@ int HTTP_GET(char *location)
 	int ret;
 	char recv_buff[10240];
 	char buff[1024];
-	char str1[1024] = "";
+	char str1[1024] = {0};
 	int port=get_port_from_HTTP_location(location);
 	char IPaddr[20];
   	get_addr_from_HTTP_location(IPaddr,location);
@@ -195,7 +195,9 @@ int HTTP_GET(char *location)
 	int fd=tcp_connect(port,IPaddr,"block");
 	if(fd>=0)
 	{
-		send(fd,str1,strlen(str1),0);
+		ret=send(fd,str1,strlen(str1),0);
+		if(ret<=0)
+			printf("send %d bytes\n",ret);
 		while(1)
 		{
 			ret=recv(fd,buff,1024,0);
@@ -204,6 +206,8 @@ int HTTP_GET(char *location)
 			sprintf(recv_buff,"%s%s",recv_buff,buff);
 		}
 	}
+	else
+		printf("connect failed,fd=%d",fd);
 }
 int main()
 {	
@@ -224,11 +228,11 @@ int main()
 	int fd=udp_socket_send(6666,"192.168.1.105","asdasgd",buff);
 	printf("%s\n",buff);
 	*/
-	/* test 3
+	
 	
 	char buff[512]={0};
 	send_SSDP_SERCH_message(buff,"rootdevice");
-	*/
 	
-	HTTP_GET("http://192.168.1.1:1900/igd.xml");
+	/* test 3
+	HTTP_GET("http://192.168.1.1:1900/igd.xml");*/
 }
